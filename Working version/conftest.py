@@ -23,38 +23,24 @@ def config(request):
 
 
 @pytest.fixture
-def app(request, config):
+def app(request):
     global fixture
     browser = request.config.getoption("--browser")
+    web_config = load_config(request.config.getoption("--target"))['web']
     if fixture is None or not fixture.is_valid():
-       fixture = Application(browser=browser, config=config)
-  #  fixture.session.ensure_login(username=config('web'), password=web_config['password'])
+       fixture = Application(browser=browser, base_url=web_config['baseUrl'])
+    web_config = load_config(request.config.getoption("--target"))['webadmin']
+    fixture.session.ensure_login(username=web_config['user'], password=web_config['password'])
     return fixture
 
-
-@pytest.fixture(scope="session", autouse=True)
-def configure_server(request, config):
-    install_server_configuration(config['ftp']['host'], config['ftp']['username'], config['ftp']['password'])
-    def fin():
-        restore_server_configuraton (config['ftp']['host'], config['ftp']['username'], config['ftp']['password'])
-    request.addfinalizer(fin)
-
-def install_server_configuration(host, username, password):
-    with ftputil.FTPHost(host, username, password) as remote:
-        if remote.path.isfile("config_inc.php.bak"):
-            remote.remove("config_inc.php.bak")
-        if remote.path.isfile("config_inc.php"):
-            remote.rename("config_inc.php", "config_inc.php.bak")
-        # f_path = os.path.join(os.path.dirname(__file__), "resources/config_inc.php")
-        remote.upload("C:/xampp/htdocs/mantisbt-1.2.19/resources/config_inc.php", "config_inc.php")
-
-def restore_server_configuraton(host, username, password):
-    with ftputil.FTPHost(host, username, password) as remote:
-        if remote.path.isfile("config_inc.php.bak"):
-            if remote.path.isfile("config_inc.php"):
-                remote.remove("config_inc.php")
-            remote.rename("config_inc.php.bak", "config_inc.php")
-
+# @pytest.fixture(scope="session", autouse=True)
+# def configure_server(request):
+#     install_server_configuration(config['ftp'],['host'], config['ftp'],['username'], config['ftp'],['password'])
+#     def fin():
+#         restore_server_configuraton (config['ftp'],['host'], config['ftp'],['username'], config['ftp'],['password'])
+#     request.addfinalizer(fin)
+# def install_server_configuration(host):
+#     pass
 
 @pytest.fixture(scope="session", autouse=True)
 def stop(request):
